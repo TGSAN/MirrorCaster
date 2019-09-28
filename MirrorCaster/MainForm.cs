@@ -1,0 +1,322 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+using System.Threading;
+
+namespace StdDemo
+{
+    public partial class MainForm : Form
+    {
+        private const uint WS_EX_LAYERED = 0x80000;
+        private const int WS_EX_TRANSPARENT = 0x20;
+        private const int GWL_STYLE = (-16);
+        private const int GWL_EXSTYLE = (-20);
+        private const int LWA_ALPHA = 0;
+
+        [DllImport("user32", EntryPoint = "SetWindowLong")]
+        private static extern uint SetWindowLong(
+        IntPtr hwnd,
+        int nIndex,
+        uint dwNewLong
+        );
+
+        [DllImport("user32", EntryPoint = "GetWindowLong")]
+        private static extern uint GetWindowLong(
+        IntPtr hwnd,
+        int nIndex
+        );
+
+        [DllImport("user32", EntryPoint = "SetLayeredWindowAttributes")]
+        private static extern int SetLayeredWindowAttributes(
+        IntPtr hwnd,
+        int crKey,
+        int bAlpha,
+        int dwFlags
+        );
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+
+        Process stdout_process = new Process();
+        Process stdin_process = new Process();
+        StreamPipe RePipe;
+
+        bool is_casting_value = false;
+        bool is_casting
+        {
+            get
+            {
+                return is_casting_value;
+            }
+            set
+            {
+                is_casting_value = value;
+                stopCastButton.Enabled = value;
+                powerKeyButton.Enabled = value;
+                backKeyButton.Enabled = value;
+                homeKeyButton.Enabled = value;
+                mutiKeyButton.Enabled = value;
+                volUpKeyButton.Enabled = value;
+                volDownKeyButton.Enabled = value;
+            }
+        }
+        int device_width = 1920;
+        int device_height = 1080;
+        bool instart_device_vmode = false;
+        bool device_vmode = false;
+
+        public static NamedPipeClientStream client;
+
+        public MainForm()
+        {
+            InitializeComponent();
+        }
+
+        private void StartCastButton_Click(object sender, EventArgs e)
+        {
+            StartCastAction();
+        }
+
+        private void StartCastAction()
+        {
+            StopCast();
+            if (UpdateScreenDeviceInfo())
+            {
+                StartCast();
+            }
+            else
+            {
+                MessageBox.Show("找不到任何设备或模拟器", "警告");
+            }
+        }
+
+        private void StartCast()
+        {
+            StdOut();
+            StdIn();
+            RePipe = new StreamPipe(stdout_process.StandardOutput.BaseStream, stdin_process.StandardInput.BaseStream);
+            RePipe.Connect();
+            instart_device_vmode = device_vmode; // 记录播放时的横竖屏状态（是否竖屏）
+            is_casting = true;
+            heartTimer.Enabled = true;
+        }
+
+        private void StopCast()
+        {
+            try
+            {
+                try
+                {
+                    // stdout_process.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
+                    stdout_process.Kill();
+                }
+                catch { }
+                try
+                {
+                    // stdin_process.OutputDataReceived -= new DataReceivedEventHandler(StdInProcessOutDataReceived);
+                    stdin_process.Kill();
+                }
+                catch
+                { }
+                RePipe.Disconnect();
+            }
+            catch { }
+            is_casting = false;
+        }
+
+        public void SetPenetrate(IntPtr useHandle, bool flag = true)
+        {
+            uint style = GetWindowLong(useHandle, GWL_EXSTYLE);
+            if (flag)
+                SetWindowLong(useHandle, GWL_EXSTYLE, style | WS_EX_TRANSPARENT | WS_EX_LAYERED);
+            else
+                SetWindowLong(useHandle, GWL_EXSTYLE, style & ~(WS_EX_TRANSPARENT | WS_EX_LAYERED));
+            SetLayeredWindowAttributes(useHandle, 0, 100, LWA_ALPHA);
+        }
+
+        private void StdOut()
+        {
+            //stdout_process.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
+            // https://developer.android.com/studio/releases/platform-tools.html
+            stdout_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\adb\adb.exe";
+            stdout_process.StartInfo.Arguments = $"exec-out \"while true;do screenrecord --bit-rate=16000000 --output-format=h264 --size {device_width.ToString()}x{device_height.ToString()} - ;done\""; // 
+            stdout_process.StartInfo.UseShellExecute = false;
+            stdout_process.StartInfo.RedirectStandardOutput = true;
+            stdout_process.StartInfo.CreateNoWindow = true;
+            stdout_process.Start();
+            if (stdin_process.StartInfo.FileName.Length != 0)
+            {
+                stdin_process.CancelOutputRead();
+                stdin_process.Close();
+            }
+            //stdout_process.OutputDataReceived += new DataReceivedEventHandler(StdOutProcessOutDataReceived);
+        }
+
+        private void StdOutProcessOutDataReceived(object sender, DataReceivedEventArgs e)
+        {
+
+        }
+
+        private void ADBSentKey(string keycode)
+        {
+            new Thread(delegate ()
+            {
+                Process process = new Process();
+                process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\adb\adb.exe";
+                process.StartInfo.Arguments = "shell input keyevent " + keycode;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+                process.Start();
+                Console.WriteLine(process.StandardOutput.ReadToEnd());
+            }).Start();
+        }
+
+        private string ADBResult(string args)
+        {
+            Process process = new Process();
+            process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\adb\adb.exe";
+            process.StartInfo.Arguments = args;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.StandardOutputEncoding = Encoding.UTF8;
+            process.Start();
+            //while (!process.StandardOutput.EndOfStream)
+            //{
+            //    Console.WriteLine(process.StandardOutput.ReadLine());
+            //}
+            //process.WaitForExit();
+            string result = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadLine();
+            process.Close();
+            return error + result;
+        }
+
+        private void StdIn()
+        {
+            stdin_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
+            stdin_process.StartInfo.Arguments = $"--hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --untimed --no-audio --no-correct-pts --framedrop=no --speed=1.01 --profile=low-latency --no-border --no-config --input-default-bindings=no --osd-level=0 -no-osc --wid={screenBox.Handle.ToInt64().ToString()} -";
+            stdin_process.StartInfo.UseShellExecute = false;
+            stdin_process.StartInfo.RedirectStandardOutput = true;
+            stdin_process.StartInfo.RedirectStandardInput = true;
+            stdin_process.StartInfo.CreateNoWindow = true;
+            stdin_process.Start();
+            stdin_process.BeginOutputReadLine();
+            //stdin_process.OutputDataReceived += new DataReceivedEventHandler(StdInProcessOutDataReceived);
+        }
+
+        private void StdInProcessOutDataReceived(object sender, DataReceivedEventArgs e)
+        {
+            try
+            {
+                this.Invoke(new Action(() =>
+                {
+                    SetParent(stdin_process.MainWindowHandle, screenBox.Handle);
+                    SetPenetrate(stdin_process.MainWindowHandle, true);
+                    SetParent(stdin_process.MainWindowHandle, this.Handle);
+                    // window, x, y, width, height, repaint
+                    MoveWindow(stdin_process.MainWindowHandle, screenBox.Location.X, screenBox.Location.Y, screenBox.Width, screenBox.Height, false);
+                }));
+            }
+            catch { }
+        }
+
+        private void StopCastButton_Click(object sender, EventArgs e)
+        {
+            StopCast();
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            StopCast();
+        }
+
+        private void Form1_Resize(object sender, EventArgs e)
+        {
+            //MoveWindow(stdin_process.MainWindowHandle, screenBox.Location.X, screenBox.Location.Y, screenBox.Width, screenBox.Height, false);
+        }
+
+        private bool UpdateScreenDeviceInfo()
+        {
+            string str = ADBResult("shell dumpsys window displays");
+            if (str.StartsWith("error: no devices/emulators found"))
+                return false; //MessageBox.Show("找不到任何设备或模拟器", "警告");
+            //Console.WriteLine(str);
+            Regex regex = new Regex(@"\s+cur=(?<width>[0-9]*)x(?<height>[0-9]*?)\s+", RegexOptions.Multiline);
+            Match match = regex.Match(str);
+            if (match.Success)
+            {
+                Console.WriteLine("成功");
+                int width = Int32.Parse(match.Groups["width"].Value); //宽
+                int height = Int32.Parse(match.Groups["height"].Value); //高
+                bool vmode = true; //垂直
+                if (width > height)
+                    vmode = false; //水平
+                string strFormat = String.Format("{0}*{1},是否垂直:{2}", width, height, vmode.ToString());
+                Console.WriteLine(strFormat);
+                device_width = width;
+                device_height = height;
+                device_vmode = vmode;
+            }
+            return true;
+        }
+
+        private void HeartTimer_Tick(object sender, EventArgs e)
+        {
+            if (UpdateScreenDeviceInfo())
+            {
+                if (instart_device_vmode != device_vmode)
+                    StartCastAction(); // 如果设备横竖屏切换则重新连接（为了转换分辨率）
+            }
+            else
+            {
+                heartTimer.Enabled = false;
+                MessageBox.Show("设备已断开连接", "警告");
+                StopCast();
+            }
+        }
+
+        private void PowerKeyButton_Click(object sender, EventArgs e)
+        {
+            ADBSentKey("KEYCODE_POWER");
+        }
+
+        private void BackKeyButton_Click(object sender, EventArgs e)
+        {
+            ADBSentKey("KEYCODE_BACK");
+        }
+
+        private void HomeKeyButton_Click(object sender, EventArgs e)
+        {
+            ADBSentKey("KEYCODE_HOME");
+        }
+
+        private void MutiKeyButton_Click(object sender, EventArgs e)
+        {
+            ADBSentKey("KEYCODE_MENU");
+        }
+
+        private void VolUpKeyButton_Click(object sender, EventArgs e)
+        {
+            ADBSentKey("KEYCODE_VOLUME_UP");
+        }
+
+        private void VolDownKeyButton_Click(object sender, EventArgs e)
+        {
+            ADBSentKey("KEYCODE_VOLUME_DOWN");
+        }
+    }
+}
