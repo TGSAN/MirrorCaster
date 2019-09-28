@@ -1,7 +1,7 @@
 # MirrorCaster
 开源、高效、低延迟的Android投屏工具 
 # Demo
-![Demo animation](https://raw.githubusercontent.com/TGSAN/MirrorCaster/images/demo.webp)
+![Demo animation](https://raw.githubusercontent.com/TGSAN/MirrorCaster/master/images/demo.webp)
 * 低延迟高质量的投屏效果 
 * 1920x1080分辨率下轻松达到60FPS 
 * 支持网络ADB投屏传输 
