@@ -1,4 +1,4 @@
-# MirrorCaster
+# MirrorCaster [![Build status](https://ci.appveyor.com/api/projects/status/lbn627rj6fw20gvd/branch/master?svg=true)](https://ci.appveyor.com/project/TGSAN/mirrorcaster/branch/master)
 开源、高效、低延迟的Android投屏工具  
 # Demo
 ![Demo animation](https://raw.githubusercontent.com/TGSAN/MirrorCaster/master/images/demo.webp)  
