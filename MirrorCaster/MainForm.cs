@@ -9,16 +9,10 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Microsoft.VisualBasic;
 
-namespace StdDemo
+namespace MirrorCaster
 {
-    public class DeviceInfoData
-    {
-        public int device_width = 1920;
-        public int device_height = 1080;
-        public int device_refreshRate = 60;
-        public bool device_vmode = false;
-    }
     public partial class MainForm : Form
     {
         private const uint WS_EX_LAYERED = 0x80000;
@@ -82,6 +76,8 @@ namespace StdDemo
         DeviceInfoData deviceInfoData = new DeviceInfoData(); // device info form adb
         DeviceInfoData instart_deviceInfoData = new DeviceInfoData(); // device info at start cast
 
+        double castMbitRate = 15; // 16M适中
+
         public static NamedPipeClientStream client;
 
         public MainForm()
@@ -94,7 +90,25 @@ namespace StdDemo
 
         private void StartCastButton_Click(object sender, EventArgs e)
         {
-            StartCastAction();
+            string inputText = string.Empty;
+            try
+            {
+                inputText = Interaction.InputBox("请输入投屏码率（Mbps）：\r\n\r\n<10：适合互联网传输\r\n<30：适合一般手机通过USB传输\r\n<100：适合编码能力强的手机通过家庭局域网（百兆）内传输\r\n<=200：适合编码能力超强的手机通过USB传输\r\n\r\n建议值：15", "准备投屏", $"{castMbitRate}", -1, -1);
+                castMbitRate = double.Parse(inputText);
+                if (castMbitRate <= 0 || castMbitRate > 200)
+                {
+                    MessageBox.Show("码率（Mbps）必须大于0且不超过200", "警告");
+                }
+                else
+                {
+                    StartCastAction();
+                }
+            }
+            catch
+            {
+                if (inputText.Length > 0)
+                    MessageBox.Show("请输入正确的码率（Mbps）", "警告");
+            }
         }
 
         private void StartCastAction()
@@ -159,7 +173,7 @@ namespace StdDemo
             //stdout_process.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
             // https://developer.android.com/studio/releases/platform-tools.html
             stdout_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\adb\adb.exe";
-            stdout_process.StartInfo.Arguments = $"exec-out \"while true;do screenrecord --bit-rate=16000000 --output-format=h264 --size {deviceInfoData.device_width.ToString()}x{deviceInfoData.device_height.ToString()} - ;done\""; // 
+            stdout_process.StartInfo.Arguments = $"exec-out \"while true;do screenrecord --bit-rate={(int)(castMbitRate * 1000000)} --output-format=h264 --size {deviceInfoData.device_width.ToString()}x{deviceInfoData.device_height.ToString()} - ;done\""; // 
             stdout_process.StartInfo.UseShellExecute = false;
             stdout_process.StartInfo.RedirectStandardOutput = true;
             stdout_process.StartInfo.CreateNoWindow = true;

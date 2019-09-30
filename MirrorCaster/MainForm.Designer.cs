@@ -1,4 +1,4 @@
-﻿namespace StdDemo
+﻿namespace MirrorCaster
 {
     partial class MainForm
     {
