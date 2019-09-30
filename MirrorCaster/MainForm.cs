@@ -342,7 +342,10 @@ namespace MirrorCaster
         {
             string str = ADBResult("shell \"dumpsys window displays && dumpsys SurfaceFlinger\"").ToLower();
             if (str.StartsWith("error: no devices/emulators found") || str.StartsWith("error: more than one device/emulator"))
+<<<<<<< HEAD
             {
+=======
+>>>>>>> 35d1f88... 多个设备时处理错误
                 return false; //MessageBox.Show("找不到任何设备或模拟器", "警告");
             }
             // Console.WriteLine(str);
