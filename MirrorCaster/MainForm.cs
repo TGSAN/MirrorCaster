@@ -12,6 +12,13 @@ using System.Threading;
 
 namespace StdDemo
 {
+    public class DeviceInfoData
+    {
+        public int device_width = 1920;
+        public int device_height = 1080;
+        public int device_refreshRate = 60;
+        public bool device_vmode = false;
+    }
     public partial class MainForm : Form
     {
         private const uint WS_EX_LAYERED = 0x80000;
@@ -66,20 +73,23 @@ namespace StdDemo
                 backKeyButton.Enabled = value;
                 homeKeyButton.Enabled = value;
                 mutiKeyButton.Enabled = value;
+                menuKeyButton.Enabled = value;
                 volUpKeyButton.Enabled = value;
                 volDownKeyButton.Enabled = value;
             }
         }
-        int device_width = 1920;
-        int device_height = 1080;
-        bool instart_device_vmode = false;
-        bool device_vmode = false;
+
+        DeviceInfoData deviceInfoData = new DeviceInfoData(); // device info form adb
+        DeviceInfoData instart_deviceInfoData = new DeviceInfoData(); // device info at start cast
 
         public static NamedPipeClientStream client;
 
         public MainForm()
         {
             InitializeComponent();
+#if DEBUG
+            testButton.Visible = true;
+#endif
         }
 
         private void StartCastButton_Click(object sender, EventArgs e)
@@ -106,7 +116,7 @@ namespace StdDemo
             StdIn();
             RePipe = new StreamPipe(stdout_process.StandardOutput.BaseStream, stdin_process.StandardInput.BaseStream);
             RePipe.Connect();
-            instart_device_vmode = device_vmode; // 记录播放时的横竖屏状态（是否竖屏）
+            instart_deviceInfoData.device_vmode = deviceInfoData.device_vmode; // 记录播放时的横竖屏状态（是否竖屏）
             is_casting = true;
             heartTimer.Enabled = true;
         }
@@ -149,7 +159,7 @@ namespace StdDemo
             //stdout_process.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
             // https://developer.android.com/studio/releases/platform-tools.html
             stdout_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\adb\adb.exe";
-            stdout_process.StartInfo.Arguments = $"exec-out \"while true;do screenrecord --bit-rate=16000000 --output-format=h264 --size {device_width.ToString()}x{device_height.ToString()} - ;done\""; // 
+            stdout_process.StartInfo.Arguments = $"exec-out \"while true;do screenrecord --bit-rate=16000000 --output-format=h264 --size {deviceInfoData.device_width.ToString()}x{deviceInfoData.device_height.ToString()} - ;done\""; // 
             stdout_process.StartInfo.UseShellExecute = false;
             stdout_process.StartInfo.RedirectStandardOutput = true;
             stdout_process.StartInfo.CreateNoWindow = true;
@@ -208,7 +218,7 @@ namespace StdDemo
         private void StdIn()
         {
             stdin_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
-            stdin_process.StartInfo.Arguments = $"--hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --untimed --no-audio --no-correct-pts --framedrop=no --speed=1.01 --profile=low-latency --no-border --no-config --input-default-bindings=no --osd-level=0 -no-osc --wid={screenBox.Handle.ToInt64().ToString()} -";
+            stdin_process.StartInfo.Arguments = $"--hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.device_refreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=1.01 --profile=low-latency --no-border --no-config --input-default-bindings=no --osd-level=0 -no-osc --wid={screenBox.Handle.ToInt64().ToString()} -";
             stdin_process.StartInfo.UseShellExecute = false;
             stdin_process.StartInfo.RedirectStandardOutput = true;
             stdin_process.StartInfo.RedirectStandardInput = true;
@@ -251,25 +261,43 @@ namespace StdDemo
 
         private bool UpdateScreenDeviceInfo()
         {
-            string str = ADBResult("shell dumpsys window displays");
+            string str = ADBResult("shell \"dumpsys window displays && dumpsys SurfaceFlinger\"").ToLower();
             if (str.StartsWith("error: no devices/emulators found"))
                 return false; //MessageBox.Show("找不到任何设备或模拟器", "警告");
-            //Console.WriteLine(str);
-            Regex regex = new Regex(@"\s+cur=(?<width>[0-9]*)x(?<height>[0-9]*?)\s+", RegexOptions.Multiline);
-            Match match = regex.Match(str);
-            if (match.Success)
+            // Console.WriteLine(str);
+            Regex regexSize = new Regex(@"\s+cur=(?<width>[0-9]*)x(?<height>[0-9]*?)\s+", RegexOptions.Multiline);
+            Match matchSize = regexSize.Match(str);
+            Regex regexRefreshRate = new Regex(@"\s+refresh-rate.+?(?<refreshRate>[0-9]*\.{0,1}[0-9]*?)\s*fps\s+", RegexOptions.Multiline);
+            Match matchRefreshRate = regexRefreshRate.Match(str);
+            if (matchSize.Success)
             {
-                Console.WriteLine("成功");
-                int width = Int32.Parse(match.Groups["width"].Value); //宽
-                int height = Int32.Parse(match.Groups["height"].Value); //高
-                bool vmode = true; //垂直
-                if (width > height)
-                    vmode = false; //水平
-                string strFormat = String.Format("{0}*{1},是否垂直:{2}", width, height, vmode.ToString());
-                Console.WriteLine(strFormat);
-                device_width = width;
-                device_height = height;
-                device_vmode = vmode;
+                Console.WriteLine("Size成功");
+                try
+                {
+                    int width = Int32.Parse(matchSize.Groups["width"].Value); //宽
+                    int height = Int32.Parse(matchSize.Groups["height"].Value); //高
+                    bool vmode = true; //垂直
+                    if (width > height)
+                        vmode = false; //水平
+                    string strFormat = string.Format("{0}*{1},是否垂直:{2}", width, height, vmode.ToString());
+                    Console.WriteLine(strFormat);
+                    deviceInfoData.device_width = width;
+                    deviceInfoData.device_height = height;
+                    deviceInfoData.device_vmode = vmode;
+                }
+                catch { }
+            }
+            if (matchRefreshRate.Success)
+            {
+                try
+                {
+                    Console.WriteLine("RefreshRate成功");
+                    int refreshRate = (int)double.Parse(matchRefreshRate.Groups["refreshRate"].Value);
+                    string strFormat = string.Format("刷新率:{0}", refreshRate);
+                    Console.WriteLine(strFormat);
+                    deviceInfoData.device_refreshRate = refreshRate;
+                }
+                catch { }
             }
             return true;
         }
@@ -278,8 +306,8 @@ namespace StdDemo
         {
             if (UpdateScreenDeviceInfo())
             {
-                if (instart_device_vmode != device_vmode)
-                    StartCastAction(); // 如果设备横竖屏切换则重新连接（为了转换分辨率）
+                if (instart_deviceInfoData.device_vmode != deviceInfoData.device_vmode)
+                    StartCastAction(); // 如果设备info切换则重新连接（为了转换分辨率）
             }
             else
             {
@@ -306,6 +334,11 @@ namespace StdDemo
 
         private void MutiKeyButton_Click(object sender, EventArgs e)
         {
+            ADBSentKey("KEYCODE_APP_SWITCH");
+        }
+
+        private void MenuKeyButton_Click(object sender, EventArgs e)
+        {
             ADBSentKey("KEYCODE_MENU");
         }
 
@@ -317,6 +350,11 @@ namespace StdDemo
         private void VolDownKeyButton_Click(object sender, EventArgs e)
         {
             ADBSentKey("KEYCODE_VOLUME_DOWN");
+        }
+
+        private void testButton_Click(object sender, EventArgs e)
+        {
+            UpdateScreenDeviceInfo();
         }
     }
 }

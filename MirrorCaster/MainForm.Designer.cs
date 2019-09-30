@@ -42,6 +42,8 @@
             this.mutiKeyButton = new System.Windows.Forms.Button();
             this.volUpKeyButton = new System.Windows.Forms.Button();
             this.volDownKeyButton = new System.Windows.Forms.Button();
+            this.menuKeyButton = new System.Windows.Forms.Button();
+            this.testButton = new System.Windows.Forms.Button();
             this.screenBox.SuspendLayout();
             this.controlPanel.SuspendLayout();
             this.SuspendLayout();
@@ -60,7 +62,7 @@
             // stopCastButton
             // 
             this.stopCastButton.Enabled = false;
-            this.stopCastButton.Location = new System.Drawing.Point(96, 4);
+            this.stopCastButton.Location = new System.Drawing.Point(189, 4);
             this.stopCastButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.stopCastButton.Name = "stopCastButton";
             this.stopCastButton.Size = new System.Drawing.Size(87, 33);
@@ -102,7 +104,7 @@
             // powerKeyButton
             // 
             this.powerKeyButton.Enabled = false;
-            this.powerKeyButton.Location = new System.Drawing.Point(189, 4);
+            this.powerKeyButton.Location = new System.Drawing.Point(282, 4);
             this.powerKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.powerKeyButton.Name = "powerKeyButton";
             this.powerKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -114,7 +116,7 @@
             // backKeyButton
             // 
             this.backKeyButton.Enabled = false;
-            this.backKeyButton.Location = new System.Drawing.Point(282, 4);
+            this.backKeyButton.Location = new System.Drawing.Point(375, 4);
             this.backKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.backKeyButton.Name = "backKeyButton";
             this.backKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -126,7 +128,7 @@
             // homeKeyButton
             // 
             this.homeKeyButton.Enabled = false;
-            this.homeKeyButton.Location = new System.Drawing.Point(375, 4);
+            this.homeKeyButton.Location = new System.Drawing.Point(468, 4);
             this.homeKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.homeKeyButton.Name = "homeKeyButton";
             this.homeKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -141,11 +143,13 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.controlPanel.AutoScroll = true;
             this.controlPanel.Controls.Add(this.startCastButton);
+            this.controlPanel.Controls.Add(this.testButton);
             this.controlPanel.Controls.Add(this.stopCastButton);
             this.controlPanel.Controls.Add(this.powerKeyButton);
             this.controlPanel.Controls.Add(this.backKeyButton);
             this.controlPanel.Controls.Add(this.homeKeyButton);
             this.controlPanel.Controls.Add(this.mutiKeyButton);
+            this.controlPanel.Controls.Add(this.menuKeyButton);
             this.controlPanel.Controls.Add(this.volUpKeyButton);
             this.controlPanel.Controls.Add(this.volDownKeyButton);
             this.controlPanel.Location = new System.Drawing.Point(12, 12);
@@ -157,7 +161,7 @@
             // mutiKeyButton
             // 
             this.mutiKeyButton.Enabled = false;
-            this.mutiKeyButton.Location = new System.Drawing.Point(468, 4);
+            this.mutiKeyButton.Location = new System.Drawing.Point(561, 4);
             this.mutiKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.mutiKeyButton.Name = "mutiKeyButton";
             this.mutiKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -169,7 +173,7 @@
             // volUpKeyButton
             // 
             this.volUpKeyButton.Enabled = false;
-            this.volUpKeyButton.Location = new System.Drawing.Point(561, 4);
+            this.volUpKeyButton.Location = new System.Drawing.Point(747, 4);
             this.volUpKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.volUpKeyButton.Name = "volUpKeyButton";
             this.volUpKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -181,7 +185,7 @@
             // volDownKeyButton
             // 
             this.volDownKeyButton.Enabled = false;
-            this.volDownKeyButton.Location = new System.Drawing.Point(654, 4);
+            this.volDownKeyButton.Location = new System.Drawing.Point(840, 4);
             this.volDownKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.volDownKeyButton.Name = "volDownKeyButton";
             this.volDownKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -189,6 +193,30 @@
             this.volDownKeyButton.Text = "音量-";
             this.volDownKeyButton.UseVisualStyleBackColor = true;
             this.volDownKeyButton.Click += new System.EventHandler(this.VolDownKeyButton_Click);
+            // 
+            // menuKeyButton
+            // 
+            this.menuKeyButton.Enabled = false;
+            this.menuKeyButton.Location = new System.Drawing.Point(654, 4);
+            this.menuKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.menuKeyButton.Name = "menuKeyButton";
+            this.menuKeyButton.Size = new System.Drawing.Size(87, 33);
+            this.menuKeyButton.TabIndex = 14;
+            this.menuKeyButton.Text = "菜单";
+            this.menuKeyButton.UseVisualStyleBackColor = true;
+            this.menuKeyButton.Click += new System.EventHandler(this.MenuKeyButton_Click);
+            // 
+            // testButton
+            // 
+            this.testButton.Location = new System.Drawing.Point(96, 4);
+            this.testButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.testButton.Name = "testButton";
+            this.testButton.Size = new System.Drawing.Size(87, 33);
+            this.testButton.TabIndex = 15;
+            this.testButton.Text = "测试按钮";
+            this.testButton.UseVisualStyleBackColor = true;
+            this.testButton.Visible = false;
+            this.testButton.Click += new System.EventHandler(this.testButton_Click);
             // 
             // MainForm
             // 
@@ -224,6 +252,8 @@
         private System.Windows.Forms.Button mutiKeyButton;
         private System.Windows.Forms.Button volUpKeyButton;
         private System.Windows.Forms.Button volDownKeyButton;
+        private System.Windows.Forms.Button menuKeyButton;
+        private System.Windows.Forms.Button testButton;
     }
 }
 
