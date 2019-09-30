@@ -76,7 +76,7 @@ namespace MirrorCaster
         DeviceInfoData deviceInfoData = new DeviceInfoData(); // device info form adb
         DeviceInfoData instart_deviceInfoData = new DeviceInfoData(); // device info at start cast
 
-        double castMbitRate = 15; // 16M适中
+        double castMbitRate = 30; // 16M适中
 
         public static NamedPipeClientStream client;
 
@@ -93,7 +93,7 @@ namespace MirrorCaster
             string inputText = string.Empty;
             try
             {
-                inputText = Interaction.InputBox("请输入投屏码率（Mbps）：\r\n\r\n<10：适合互联网传输\r\n<30：适合一般手机通过USB传输\r\n<100：适合编码能力强的手机通过家庭局域网（百兆）内传输\r\n<=200：适合编码能力超强的手机通过USB传输\r\n\r\n建议值：15", "准备投屏", $"{castMbitRate}", -1, -1);
+                inputText = Interaction.InputBox("请输入投屏码率（Mbps）：\r\n\r\n<10：适合互联网传输\r\n<30：适合一般手机通过USB传输\r\n<100：适合编码能力强的手机通过家庭局域网（百兆）内传输\r\n<=200：适合编码能力超强的手机通过USB传输\r\n\r\n建议值：30", "准备投屏", $"{castMbitRate}", -1, -1);
                 castMbitRate = double.Parse(inputText);
                 if (castMbitRate <= 0 || castMbitRate > 200)
                 {
@@ -232,7 +232,7 @@ namespace MirrorCaster
         private void StdIn()
         {
             stdin_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
-            stdin_process.StartInfo.Arguments = $"--hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.device_refreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=1.01 --profile=low-latency --no-border --no-config --input-default-bindings=no --osd-level=0 -no-osc --wid={screenBox.Handle.ToInt64().ToString()} -";
+            stdin_process.StartInfo.Arguments = $"--hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.device_refreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=2 --profile=low-latency --no-border --no-config --input-default-bindings=no --osd-level=0 -no-osc --wid={screenBox.Handle.ToInt64().ToString()} -";
             stdin_process.StartInfo.UseShellExecute = false;
             stdin_process.StartInfo.RedirectStandardOutput = true;
             stdin_process.StartInfo.RedirectStandardInput = true;
