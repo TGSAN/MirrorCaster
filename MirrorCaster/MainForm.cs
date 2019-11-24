@@ -282,7 +282,7 @@ namespace MirrorCaster
                     break;
             }
             stdinProcess.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
-            stdinProcess.StartInfo.Arguments = $"--title=\"Mirror Caster Source\" --no-taskbar-progress --hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.deviceRefreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=2 --profile=low-latency --no-config --input-default-bindings=no --osd-level=0 --no-border -no-osc {widArg} -";
+            stdinProcess.StartInfo.Arguments = $"--title=\"Mirror Caster Source\" --no-taskbar-progress --hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.deviceRefreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=1.01 --profile=low-latency --no-config --input-default-bindings=no --osd-level=0 --no-border -no-osc {widArg} -";
             //stdinProcess.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
             stdinProcess.StartInfo.UseShellExecute = false;
             stdinProcess.StartInfo.RedirectStandardOutput = true;
