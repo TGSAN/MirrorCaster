@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MirrorCaster
+﻿namespace MirrorCaster
 {
     public class DeviceInfoData
     {
-        public int device_width = 1920;
-        public int device_height = 1080;
-        public int device_refreshRate = 60;
-        public bool device_vmode = false;
+        public int deviceWidth = 1920;
+        public int deviceHeight = 1080;
+        public int deviceRefreshRate = 60;
+        public bool deviceVmode = false; // 是否为竖屏状态
     }
 }

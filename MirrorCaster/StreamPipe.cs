@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
+﻿using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MirrorCaster
 {
-    class StreamPipe
+    internal class StreamPipe
     {
-        private const Int32 BufferSize = 4096;
+        private const int BufferSize = 4096;
 
         public Stream Source { get; protected set; }
         public Stream Destination { get; protected set; }
@@ -33,9 +29,12 @@ namespace MirrorCaster
                 while (true)
                 {
                     _cancellationToken.Token.ThrowIfCancellationRequested();
-                    var count = await Source.ReadAsync(buffer, 0, BufferSize, _cancellationToken.Token);
+                    int count = await Source.ReadAsync(buffer, 0, BufferSize, _cancellationToken.Token);
                     if (count <= 0)
+                    {
                         break;
+                    }
+
                     await Destination.WriteAsync(buffer, 0, count, _cancellationToken.Token);
                     await Destination.FlushAsync(_cancellationToken.Token);
                 }

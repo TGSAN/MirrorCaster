@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
+﻿using Microsoft.VisualBasic;
+using System;
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using Microsoft.VisualBasic;
+using System.Windows.Forms;
 
 namespace MirrorCaster
 {
@@ -48,20 +45,19 @@ namespace MirrorCaster
         [DllImport("user32.dll")]
         private static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
-        Process stdout_process = new Process();
-        Process stdin_process = new Process();
-        StreamPipe RePipe;
+        private readonly Process stdoutProcess = new Process();
+        private readonly Process stdinProcess = new Process();
+        private StreamPipe RePipe;
+        private CastType castType = CastType.Internal;
+        private bool isCastingValue = false;
 
-        bool is_casting_value = false;
-        bool is_casting
+        private bool isCasting
         {
-            get
-            {
-                return is_casting_value;
-            }
+            get => isCastingValue;
             set
             {
-                is_casting_value = value;
+                isCastingValue = value;
+
                 stopCastButton.Enabled = value;
                 powerKeyButton.Enabled = value;
                 backKeyButton.Enabled = value;
@@ -73,10 +69,16 @@ namespace MirrorCaster
             }
         }
 
-        DeviceInfoData deviceInfoData = new DeviceInfoData(); // device info form adb
-        DeviceInfoData instart_deviceInfoData = new DeviceInfoData(); // device info at start cast
+        private enum CastType
+        {
+            Internal,
+            Single
+        }
 
-        double castMbitRate = 30; // 16M适中
+        private readonly DeviceInfoData deviceInfoData = new DeviceInfoData(); // device info form adb
+        private readonly DeviceInfoData instartDeviceInfoData = new DeviceInfoData(); // device info at start cast
+
+        private double castMbitRate = 30; // 16M适中
 
         public static NamedPipeClientStream client;
 
@@ -88,7 +90,20 @@ namespace MirrorCaster
 #endif
         }
 
+        private void startCastSingleButton_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("关于独立窗口模式\n\n可便于OBS等直播软件抓取，因为弹出外部播放器窗口相比内建可控性更差，画面旋转及分辨率自适应已被禁用。\n\n建议先将手机处于应用横屏状态再点击“确定”按钮开始投屏。\n\n若使用OBS进行抓取，请使用：\n游戏捕获->模式：捕获特定窗口->窗口：[mpv.exe] Mirror Caster Source", "提示");
+            castType = CastType.Single;
+            ShowConfigDialog();
+        }
+
         private void StartCastButton_Click(object sender, EventArgs e)
+        {
+            castType = CastType.Internal;
+            ShowConfigDialog();
+        }
+
+        private void ShowConfigDialog()
         {
             string inputText = string.Empty;
             try
@@ -107,7 +122,9 @@ namespace MirrorCaster
             catch
             {
                 if (inputText.Length > 0)
+                {
                     MessageBox.Show("请输入正确的码率（Mbps）", "警告");
+                }
             }
         }
 
@@ -128,11 +145,12 @@ namespace MirrorCaster
         {
             StdOut();
             StdIn();
-            RePipe = new StreamPipe(stdout_process.StandardOutput.BaseStream, stdin_process.StandardInput.BaseStream);
+            RePipe = new StreamPipe(stdoutProcess.StandardOutput.BaseStream, stdinProcess.StandardInput.BaseStream);
             RePipe.Connect();
-            instart_deviceInfoData.device_vmode = deviceInfoData.device_vmode; // 记录播放时的横竖屏状态（是否竖屏）
-            is_casting = true;
+            instartDeviceInfoData.deviceVmode = deviceInfoData.deviceVmode; // 记录播放时的横竖屏状态（是否竖屏）
+            isCasting = true;
             heartTimer.Enabled = true;
+            if (castType == CastType.Single) nosigalLabel.Text = "投屏中 (｀・ω・´)";
         }
 
         private void StopCast()
@@ -141,49 +159,68 @@ namespace MirrorCaster
             {
                 try
                 {
-                    // stdout_process.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
-                    stdout_process.Kill();
+                    stdoutProcess.Exited -= StdIOProcess_Exited;
+                    // stdoutProcess.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
+                    stdoutProcess.Kill();
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("无法关闭StdOUT，" + ex.Message);
+                }
                 try
                 {
-                    // stdin_process.OutputDataReceived -= new DataReceivedEventHandler(StdInProcessOutDataReceived);
-                    stdin_process.Kill();
+                    stdinProcess.Exited -= StdIOProcess_Exited;
+                    // stdinProcess.OutputDataReceived -= new DataReceivedEventHandler(StdInProcessOutDataReceived);
+                    stdinProcess.Kill();
                 }
-                catch
-                { }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("无法关闭StdIN，" + ex.Message);
+                }
                 RePipe.Disconnect();
             }
-            catch { }
-            is_casting = false;
+            catch (Exception ex)
+            {
+                Console.WriteLine("无法断开管道重定向，" + ex.Message);
+            }
+            heartTimer.Enabled = false;
+            isCasting = false;
+            nosigalLabel.Text = "无信号_(:3」∠)_";
         }
 
         public void SetPenetrate(IntPtr useHandle, bool flag = true)
         {
             uint style = GetWindowLong(useHandle, GWL_EXSTYLE);
             if (flag)
+            {
                 SetWindowLong(useHandle, GWL_EXSTYLE, style | WS_EX_TRANSPARENT | WS_EX_LAYERED);
+            }
             else
+            {
                 SetWindowLong(useHandle, GWL_EXSTYLE, style & ~(WS_EX_TRANSPARENT | WS_EX_LAYERED));
+            }
+
             SetLayeredWindowAttributes(useHandle, 0, 100, LWA_ALPHA);
         }
 
         private void StdOut()
         {
-            //stdout_process.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
+            //stdoutProcess.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
             // https://developer.android.com/studio/releases/platform-tools.html
-            stdout_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\adb\adb.exe";
-            stdout_process.StartInfo.Arguments = $"exec-out \"while true;do screenrecord --bit-rate={(int)(castMbitRate * 1000000)} --output-format=h264 --size {deviceInfoData.device_width.ToString()}x{deviceInfoData.device_height.ToString()} - ;done\""; // 
-            stdout_process.StartInfo.UseShellExecute = false;
-            stdout_process.StartInfo.RedirectStandardOutput = true;
-            stdout_process.StartInfo.CreateNoWindow = true;
-            stdout_process.Start();
-            if (stdin_process.StartInfo.FileName.Length != 0)
+            stdoutProcess.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\adb\adb.exe";
+            stdoutProcess.StartInfo.Arguments = $"exec-out \"while true;do screenrecord --bit-rate={(int)(castMbitRate * 1000000)} --output-format=h264 --size {deviceInfoData.deviceWidth.ToString()}x{deviceInfoData.deviceHeight.ToString()} - ;done\""; // 
+            stdoutProcess.StartInfo.UseShellExecute = false;
+            stdoutProcess.StartInfo.RedirectStandardOutput = true;
+            stdoutProcess.StartInfo.CreateNoWindow = true;
+            stdoutProcess.EnableRaisingEvents = true;
+            stdoutProcess.Exited += StdIOProcess_Exited;
+            stdoutProcess.Start();
+            if (stdinProcess.StartInfo.FileName.Length != 0)
             {
-                stdin_process.CancelOutputRead();
-                stdin_process.Close();
+                stdinProcess.CancelOutputRead();
+                stdinProcess.Close();
             }
-            //stdout_process.OutputDataReceived += new DataReceivedEventHandler(StdOutProcessOutDataReceived);
+            //stdoutProcess.OutputDataReceived += new DataReceivedEventHandler(StdOutProcessOutDataReceived);
         }
 
         private void StdOutProcessOutDataReceived(object sender, DataReceivedEventArgs e)
@@ -231,28 +268,50 @@ namespace MirrorCaster
 
         private void StdIn()
         {
-            stdin_process.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
-            stdin_process.StartInfo.Arguments = $"--hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.device_refreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=2 --profile=low-latency --no-border --no-config --input-default-bindings=no --osd-level=0 -no-osc --wid={screenBox.Handle.ToInt64().ToString()} -";
-            stdin_process.StartInfo.UseShellExecute = false;
-            stdin_process.StartInfo.RedirectStandardOutput = true;
-            stdin_process.StartInfo.RedirectStandardInput = true;
-            stdin_process.StartInfo.CreateNoWindow = true;
-            stdin_process.Start();
-            stdin_process.BeginOutputReadLine();
-            //stdin_process.OutputDataReceived += new DataReceivedEventHandler(StdInProcessOutDataReceived);
+            string widArg;
+            switch (castType)
+            {
+                case CastType.Internal:
+                    widArg = $"--wid={screenBox.Handle.ToInt64().ToString()}";
+                    break;
+                case CastType.Single:
+                    widArg = default;
+                    break;
+                default:
+                    widArg = default;
+                    break;
+            }
+            stdinProcess.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
+            stdinProcess.StartInfo.Arguments = $"--title=\"Mirror Caster Source\" --no-taskbar-progress --hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.deviceRefreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=2 --profile=low-latency --no-config --input-default-bindings=no --osd-level=0 --no-border -no-osc {widArg} -";
+            //stdinProcess.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
+            stdinProcess.StartInfo.UseShellExecute = false;
+            stdinProcess.StartInfo.RedirectStandardOutput = true;
+            stdinProcess.StartInfo.RedirectStandardInput = true;
+            stdinProcess.StartInfo.CreateNoWindow = true;
+            stdinProcess.EnableRaisingEvents = true;
+            stdinProcess.Exited += StdIOProcess_Exited;
+            stdinProcess.Start();
+            stdinProcess.BeginOutputReadLine();
+            //stdinProcess.OutputDataReceived += new DataReceivedEventHandler(StdInProcessOutDataReceived);
+        }
+
+        private void StdIOProcess_Exited(object sender, EventArgs e)
+        {
+            Console.WriteLine("StdIO管道被关闭，关闭投屏");
+            Invoke(new Action(StopCast)); // 结束投屏需要修改UI，所以Invoke
         }
 
         private void StdInProcessOutDataReceived(object sender, DataReceivedEventArgs e)
         {
             try
             {
-                this.Invoke(new Action(() =>
+                Invoke(new Action(() =>
                 {
-                    SetParent(stdin_process.MainWindowHandle, screenBox.Handle);
-                    SetPenetrate(stdin_process.MainWindowHandle, true);
-                    SetParent(stdin_process.MainWindowHandle, this.Handle);
+                    SetParent(stdinProcess.MainWindowHandle, screenBox.Handle);
+                    SetPenetrate(stdinProcess.MainWindowHandle, true);
+                    SetParent(stdinProcess.MainWindowHandle, Handle);
                     // window, x, y, width, height, repaint
-                    MoveWindow(stdin_process.MainWindowHandle, screenBox.Location.X, screenBox.Location.Y, screenBox.Width, screenBox.Height, false);
+                    MoveWindow(stdinProcess.MainWindowHandle, screenBox.Location.X, screenBox.Location.Y, screenBox.Width, screenBox.Height, false);
                 }));
             }
             catch { }
@@ -270,14 +329,16 @@ namespace MirrorCaster
 
         private void Form1_Resize(object sender, EventArgs e)
         {
-            //MoveWindow(stdin_process.MainWindowHandle, screenBox.Location.X, screenBox.Location.Y, screenBox.Width, screenBox.Height, false);
+            //MoveWindow(stdinProcess.MainWindowHandle, screenBox.Location.X, screenBox.Location.Y, screenBox.Width, screenBox.Height, false);
         }
 
         private bool UpdateScreenDeviceInfo()
         {
             string str = ADBResult("shell \"dumpsys window displays && dumpsys SurfaceFlinger\"").ToLower();
             if (str.StartsWith("error: no devices/emulators found"))
+            {
                 return false; //MessageBox.Show("找不到任何设备或模拟器", "警告");
+            }
             // Console.WriteLine(str);
             Regex regexSize = new Regex(@"\s+cur=(?<width>[0-9]*)x(?<height>[0-9]*?)\s+", RegexOptions.Multiline);
             Match matchSize = regexSize.Match(str);
@@ -288,16 +349,19 @@ namespace MirrorCaster
                 Console.WriteLine("Size成功");
                 try
                 {
-                    int width = Int32.Parse(matchSize.Groups["width"].Value); //宽
-                    int height = Int32.Parse(matchSize.Groups["height"].Value); //高
+                    int width = int.Parse(matchSize.Groups["width"].Value); //宽
+                    int height = int.Parse(matchSize.Groups["height"].Value); //高
                     bool vmode = true; //垂直
                     if (width > height)
+                    {
                         vmode = false; //水平
+                    }
+
                     string strFormat = string.Format("{0}*{1},是否垂直:{2}", width, height, vmode.ToString());
                     Console.WriteLine(strFormat);
-                    deviceInfoData.device_width = width;
-                    deviceInfoData.device_height = height;
-                    deviceInfoData.device_vmode = vmode;
+                    deviceInfoData.deviceWidth = width;
+                    deviceInfoData.deviceHeight = height;
+                    deviceInfoData.deviceVmode = vmode;
                 }
                 catch { }
             }
@@ -309,7 +373,7 @@ namespace MirrorCaster
                     int refreshRate = (int)double.Parse(matchRefreshRate.Groups["refreshRate"].Value);
                     string strFormat = string.Format("刷新率:{0}", refreshRate);
                     Console.WriteLine(strFormat);
-                    deviceInfoData.device_refreshRate = refreshRate;
+                    deviceInfoData.deviceRefreshRate = refreshRate;
                 }
                 catch { }
             }
@@ -320,8 +384,10 @@ namespace MirrorCaster
         {
             if (UpdateScreenDeviceInfo())
             {
-                if (instart_deviceInfoData.device_vmode != deviceInfoData.device_vmode)
-                    StartCastAction(); // 如果设备info切换则重新连接（为了转换分辨率）
+                if (instartDeviceInfoData.deviceVmode != deviceInfoData.deviceVmode)
+                {
+                    if (castType == CastType.Internal) StartCastAction(); // 如果设备info切换则重新连接（为了转换分辨率）
+                }
             }
             else
             {
