@@ -281,8 +281,14 @@ namespace MirrorCaster
                     widArg = default;
                     break;
             }
+            string release_args = "--input-default-bindings=no --osd-level=0";
+#if DEBUG
+            release_args = default;
+#endif
+            string mpv_full_args = $"--title=\"Mirror Caster Source\" --no-taskbar-progress --hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.deviceRefreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=1.01 --profile=low-latency --no-config --no-border {release_args} -no-osc {widArg} -";
+            Console.WriteLine("MPV ARGS:\r\n" + mpv_full_args);
             stdinProcess.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
-            stdinProcess.StartInfo.Arguments = $"--title=\"Mirror Caster Source\" --no-taskbar-progress --hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.deviceRefreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=1.01 --profile=low-latency --no-config --input-default-bindings=no --osd-level=0 --no-border -no-osc {widArg} -";
+            stdinProcess.StartInfo.Arguments = mpv_full_args;
             //stdinProcess.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
             stdinProcess.StartInfo.UseShellExecute = false;
             stdinProcess.StartInfo.RedirectStandardOutput = true;
@@ -370,7 +376,7 @@ namespace MirrorCaster
                 try
                 {
                     Console.WriteLine("RefreshRate成功");
-                    int refreshRate = (int)double.Parse(matchRefreshRate.Groups["refreshRate"].Value);
+                    double refreshRate = double.Parse(matchRefreshRate.Groups["refreshRate"].Value);
                     string strFormat = string.Format("刷新率:{0}", refreshRate);
                     Console.WriteLine(strFormat);
                     deviceInfoData.deviceRefreshRate = refreshRate;
