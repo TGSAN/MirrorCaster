@@ -50,6 +50,7 @@ namespace MirrorCaster
         private StreamPipe RePipe;
         private CastType castType = CastType.Internal;
         private bool isCastingValue = false;
+        private bool isEnableVSync = false;
 
         private bool isCasting
         {
@@ -66,6 +67,8 @@ namespace MirrorCaster
                 menuKeyButton.Enabled = value;
                 volUpKeyButton.Enabled = value;
                 volDownKeyButton.Enabled = value;
+
+                vsyncEnableCheckBox.Enabled = !value;
             }
         }
 
@@ -177,7 +180,9 @@ namespace MirrorCaster
                 {
                     Console.WriteLine("无法关闭StdIN，" + ex.Message);
                 }
-                RePipe.Disconnect();
+                if (RePipe != null) { 
+                    RePipe.Disconnect();
+                }
             }
             catch (Exception ex)
             {
@@ -281,11 +286,12 @@ namespace MirrorCaster
                     widArg = default;
                     break;
             }
+            string vsync_args = "--d3d11-sync-interval=" + (isEnableVSync ? "1" : "0");
             string release_args = "--input-default-bindings=no --osd-level=0";
 #if DEBUG
             release_args = default;
 #endif
-            string mpv_full_args = $"--title=\"Mirror Caster Source\" --no-taskbar-progress --hwdec=auto --opengl-glfinish=yes --opengl-swapinterval=0 --d3d11-sync-interval=0 --fps={deviceInfoData.deviceRefreshRate} --no-audio --framedrop=decoder --no-correct-pts --speed=1.01 --profile=low-latency --no-config --no-border {release_args} -no-osc {widArg} -";
+            string mpv_full_args = $"--title=\"Mirror Caster Source\" --cache=no --no-cache --profile=low-latency --untimed --no-correct-pts --video-latency-hacks=yes --speed=1.2 { vsync_args } --framedrop=decoder --hwdec=auto --no-audio --no-config --no-border -no-osc --no-taskbar-progress { release_args } { widArg } -";
             Console.WriteLine("MPV ARGS:\r\n" + mpv_full_args);
             stdinProcess.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
             stdinProcess.StartInfo.Arguments = mpv_full_args;
@@ -341,12 +347,15 @@ namespace MirrorCaster
         private bool UpdateScreenDeviceInfo()
         {
             string str = ADBResult("shell \"dumpsys window displays && dumpsys SurfaceFlinger\"").ToLower();
-            if (str.StartsWith("error: no devices/emulators found") || str.StartsWith("error: more than one device/emulator"))
-<<<<<<< HEAD
+            if (str.StartsWith("error: no devices/emulators found"))
             {
-=======
->>>>>>> 35d1f88... 多个设备时处理错误
-                return false; //MessageBox.Show("找不到任何设备或模拟器", "警告");
+                MessageBox.Show("找不到任何设备或模拟器", "警告");
+                return false;
+            }
+            else if (str.StartsWith("error: more than one device/emulator"))
+            {
+                MessageBox.Show("暂时只支持单个设备开启 ADB 调试，请关闭其它设备的调试或移除连接。", "警告");
+                return false;
             }
             // Console.WriteLine(str);
             Regex regexSize = new Regex(@"\s+cur=(?<width>[0-9]*)x(?<height>[0-9]*?)\s+", RegexOptions.Multiline);
@@ -444,6 +453,11 @@ namespace MirrorCaster
         private void testButton_Click(object sender, EventArgs e)
         {
             UpdateScreenDeviceInfo();
+        }
+
+        private void vsyncEnableCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            isEnableVSync = vsyncEnableCheckBox.Checked;
         }
     }
 }
