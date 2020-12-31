@@ -1,0 +1,21 @@
+version: build{build}
+branches:
+  only:
+  - master
+skip_tags: true
+image: Visual Studio 2019
+configuration: Release
+platform: Any CPU
+build:
+  verbosity: minimal
+artifacts:
+- path: MirrorCaster\bin\$(configuration)
+  name: MirrorCaster_$(configuration)_AnyCPU
+deploy:
+- provider: GitHub
+  tag: ci-$(appveyor_build_version)
+  release: ci-$(appveyor_build_version)
+  auth_token:
+    secure: HpqTAOpVXMeSGKFnzICMESKls0THQd5CsPzoymk5g1982e5iDOFs10pYKTgo4Z8t
+  artifact: MirrorCaster_$(configuration)_AnyCPU
+  draft: true
