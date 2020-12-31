@@ -138,10 +138,6 @@ namespace MirrorCaster
             {
                 StartCast();
             }
-            else
-            {
-                MessageBox.Show("找不到任何设备或模拟器", "警告");
-            }
         }
 
         private void StartCast()
