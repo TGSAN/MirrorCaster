@@ -39,20 +39,22 @@
             this.backKeyButton = new System.Windows.Forms.Button();
             this.homeKeyButton = new System.Windows.Forms.Button();
             this.controlPanel = new System.Windows.Forms.FlowLayoutPanel();
+            this.vsyncEnableCheckBox = new System.Windows.Forms.CheckBox();
+            this.hwdecEnableCheckBox = new System.Windows.Forms.CheckBox();
+            this.profileComboBox = new System.Windows.Forms.ComboBox();
             this.startCastSingleButton = new System.Windows.Forms.Button();
             this.testButton = new System.Windows.Forms.Button();
             this.mutiKeyButton = new System.Windows.Forms.Button();
             this.menuKeyButton = new System.Windows.Forms.Button();
             this.volUpKeyButton = new System.Windows.Forms.Button();
             this.volDownKeyButton = new System.Windows.Forms.Button();
-            this.vsyncEnableCheckBox = new System.Windows.Forms.CheckBox();
             this.screenBox.SuspendLayout();
             this.controlPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // startCastButton
             // 
-            this.startCastButton.Location = new System.Drawing.Point(93, 4);
+            this.startCastButton.Location = new System.Drawing.Point(301, 4);
             this.startCastButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.startCastButton.Name = "startCastButton";
             this.startCastButton.Size = new System.Drawing.Size(87, 33);
@@ -64,7 +66,7 @@
             // stopCastButton
             // 
             this.stopCastButton.Enabled = false;
-            this.stopCastButton.Location = new System.Drawing.Point(549, 4);
+            this.stopCastButton.Location = new System.Drawing.Point(757, 4);
             this.stopCastButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.stopCastButton.Name = "stopCastButton";
             this.stopCastButton.Size = new System.Drawing.Size(87, 33);
@@ -106,7 +108,7 @@
             // powerKeyButton
             // 
             this.powerKeyButton.Enabled = false;
-            this.powerKeyButton.Location = new System.Drawing.Point(642, 4);
+            this.powerKeyButton.Location = new System.Drawing.Point(850, 4);
             this.powerKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.powerKeyButton.Name = "powerKeyButton";
             this.powerKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -118,7 +120,7 @@
             // backKeyButton
             // 
             this.backKeyButton.Enabled = false;
-            this.backKeyButton.Location = new System.Drawing.Point(735, 4);
+            this.backKeyButton.Location = new System.Drawing.Point(943, 4);
             this.backKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.backKeyButton.Name = "backKeyButton";
             this.backKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -130,7 +132,7 @@
             // homeKeyButton
             // 
             this.homeKeyButton.Enabled = false;
-            this.homeKeyButton.Location = new System.Drawing.Point(828, 4);
+            this.homeKeyButton.Location = new System.Drawing.Point(1036, 4);
             this.homeKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.homeKeyButton.Name = "homeKeyButton";
             this.homeKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -145,6 +147,8 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.controlPanel.AutoScroll = true;
             this.controlPanel.Controls.Add(this.vsyncEnableCheckBox);
+            this.controlPanel.Controls.Add(this.hwdecEnableCheckBox);
+            this.controlPanel.Controls.Add(this.profileComboBox);
             this.controlPanel.Controls.Add(this.startCastButton);
             this.controlPanel.Controls.Add(this.startCastSingleButton);
             this.controlPanel.Controls.Add(this.testButton);
@@ -162,9 +166,46 @@
             this.controlPanel.TabIndex = 6;
             this.controlPanel.WrapContents = false;
             // 
+            // vsyncEnableCheckBox
+            // 
+            this.vsyncEnableCheckBox.AutoSize = true;
+            this.vsyncEnableCheckBox.Location = new System.Drawing.Point(12, 11);
+            this.vsyncEnableCheckBox.Margin = new System.Windows.Forms.Padding(12, 11, 0, 3);
+            this.vsyncEnableCheckBox.Name = "vsyncEnableCheckBox";
+            this.vsyncEnableCheckBox.Size = new System.Drawing.Size(75, 21);
+            this.vsyncEnableCheckBox.TabIndex = 17;
+            this.vsyncEnableCheckBox.Text = "垂直同步";
+            this.vsyncEnableCheckBox.UseVisualStyleBackColor = true;
+            this.vsyncEnableCheckBox.CheckedChanged += new System.EventHandler(this.vsyncEnableCheckBox_CheckedChanged);
+            // 
+            // hwdecEnableCheckBox
+            // 
+            this.hwdecEnableCheckBox.AutoSize = true;
+            this.hwdecEnableCheckBox.Checked = true;
+            this.hwdecEnableCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.hwdecEnableCheckBox.Location = new System.Drawing.Point(87, 11);
+            this.hwdecEnableCheckBox.Margin = new System.Windows.Forms.Padding(0, 11, 0, 3);
+            this.hwdecEnableCheckBox.Name = "hwdecEnableCheckBox";
+            this.hwdecEnableCheckBox.Size = new System.Drawing.Size(75, 21);
+            this.hwdecEnableCheckBox.TabIndex = 19;
+            this.hwdecEnableCheckBox.Text = "硬件加速";
+            this.hwdecEnableCheckBox.UseVisualStyleBackColor = true;
+            this.hwdecEnableCheckBox.CheckedChanged += new System.EventHandler(this.hwdecEnableCheckBox_CheckedChanged);
+            // 
+            // profileComboBox
+            // 
+            this.profileComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.profileComboBox.FormattingEnabled = true;
+            this.profileComboBox.Location = new System.Drawing.Point(165, 8);
+            this.profileComboBox.Margin = new System.Windows.Forms.Padding(3, 8, 3, 3);
+            this.profileComboBox.Name = "profileComboBox";
+            this.profileComboBox.Size = new System.Drawing.Size(130, 25);
+            this.profileComboBox.TabIndex = 18;
+            this.profileComboBox.SelectedIndexChanged += new System.EventHandler(this.profileComboBox_SelectedIndexChanged);
+            // 
             // startCastSingleButton
             // 
-            this.startCastSingleButton.Location = new System.Drawing.Point(186, 4);
+            this.startCastSingleButton.Location = new System.Drawing.Point(394, 4);
             this.startCastSingleButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.startCastSingleButton.Name = "startCastSingleButton";
             this.startCastSingleButton.Size = new System.Drawing.Size(264, 33);
@@ -176,7 +217,7 @@
             // 
             // testButton
             // 
-            this.testButton.Location = new System.Drawing.Point(456, 4);
+            this.testButton.Location = new System.Drawing.Point(664, 4);
             this.testButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.testButton.Name = "testButton";
             this.testButton.Size = new System.Drawing.Size(87, 33);
@@ -189,7 +230,7 @@
             // mutiKeyButton
             // 
             this.mutiKeyButton.Enabled = false;
-            this.mutiKeyButton.Location = new System.Drawing.Point(921, 4);
+            this.mutiKeyButton.Location = new System.Drawing.Point(1129, 4);
             this.mutiKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.mutiKeyButton.Name = "mutiKeyButton";
             this.mutiKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -201,7 +242,7 @@
             // menuKeyButton
             // 
             this.menuKeyButton.Enabled = false;
-            this.menuKeyButton.Location = new System.Drawing.Point(1014, 4);
+            this.menuKeyButton.Location = new System.Drawing.Point(1222, 4);
             this.menuKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.menuKeyButton.Name = "menuKeyButton";
             this.menuKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -213,7 +254,7 @@
             // volUpKeyButton
             // 
             this.volUpKeyButton.Enabled = false;
-            this.volUpKeyButton.Location = new System.Drawing.Point(1107, 4);
+            this.volUpKeyButton.Location = new System.Drawing.Point(1315, 4);
             this.volUpKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.volUpKeyButton.Name = "volUpKeyButton";
             this.volUpKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -225,7 +266,7 @@
             // volDownKeyButton
             // 
             this.volDownKeyButton.Enabled = false;
-            this.volDownKeyButton.Location = new System.Drawing.Point(1200, 4);
+            this.volDownKeyButton.Location = new System.Drawing.Point(1408, 4);
             this.volDownKeyButton.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.volDownKeyButton.Name = "volDownKeyButton";
             this.volDownKeyButton.Size = new System.Drawing.Size(87, 33);
@@ -233,18 +274,6 @@
             this.volDownKeyButton.Text = "音量-";
             this.volDownKeyButton.UseVisualStyleBackColor = true;
             this.volDownKeyButton.Click += new System.EventHandler(this.VolDownKeyButton_Click);
-            // 
-            // vsyncEnableCheckBox
-            // 
-            this.vsyncEnableCheckBox.AutoSize = true;
-            this.vsyncEnableCheckBox.Location = new System.Drawing.Point(12, 11);
-            this.vsyncEnableCheckBox.Margin = new System.Windows.Forms.Padding(12, 11, 3, 3);
-            this.vsyncEnableCheckBox.Name = "vsyncEnableCheckBox";
-            this.vsyncEnableCheckBox.Size = new System.Drawing.Size(75, 21);
-            this.vsyncEnableCheckBox.TabIndex = 17;
-            this.vsyncEnableCheckBox.Text = "垂直同步";
-            this.vsyncEnableCheckBox.UseVisualStyleBackColor = true;
-            this.vsyncEnableCheckBox.CheckedChanged += new System.EventHandler(this.vsyncEnableCheckBox_CheckedChanged);
             // 
             // MainForm
             // 
@@ -285,6 +314,8 @@
         private System.Windows.Forms.Button testButton;
         private System.Windows.Forms.Button startCastSingleButton;
         private System.Windows.Forms.CheckBox vsyncEnableCheckBox;
+        private System.Windows.Forms.ComboBox profileComboBox;
+        private System.Windows.Forms.CheckBox hwdecEnableCheckBox;
     }
 }
 

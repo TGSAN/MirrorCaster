@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualBasic;
 using System;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
@@ -45,12 +46,33 @@ namespace MirrorCaster
         [DllImport("user32.dll")]
         private static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
 
-        private readonly Process stdoutProcess = new Process();
-        private readonly Process stdinProcess = new Process();
-        private StreamPipe RePipe;
+        private Process stdoutProcess = null;
+        private Process stdinProcess = null;
+        private StreamPipe rePipe;
         private CastType castType = CastType.Internal;
         private bool isCastingValue = false;
         private bool isEnableVSync = false;
+        private bool isEnableHWDec = true;
+        private UserMPVArg profileArgs;
+
+        private OrderedDictionary profileList = new OrderedDictionary() {
+            {
+                "超低延迟模式",
+                new UserMPVArg("", false)
+            },
+            {
+                "均衡（偏向低延迟）",
+                new UserMPVArg("--speed=10", true)
+            },
+            {
+                "均衡（偏向稳定）",
+                new UserMPVArg( "--speed=1.01", true)
+            },
+            {
+                "稳定模式",
+                new UserMPVArg("", true)
+            },
+        };
 
         private bool isCasting
         {
@@ -68,6 +90,8 @@ namespace MirrorCaster
                 volUpKeyButton.Enabled = value;
                 volDownKeyButton.Enabled = value;
 
+                profileComboBox.Enabled = !value;
+                hwdecEnableCheckBox.Enabled = !value;
                 vsyncEnableCheckBox.Enabled = !value;
             }
         }
@@ -88,6 +112,14 @@ namespace MirrorCaster
         public MainForm()
         {
             InitializeComponent();
+
+            profileComboBox.Items.Clear();
+            foreach (string item in profileList.Keys)
+            {
+                profileComboBox.Items.Add(item);
+            }
+            profileComboBox.SelectedIndex = 0;
+            profileArgs = profileList[profileComboBox.Text] as UserMPVArg;
 #if DEBUG
             testButton.Visible = true;
 #endif
@@ -142,10 +174,12 @@ namespace MirrorCaster
 
         private void StartCast()
         {
+            stdoutProcess = new Process();
+            stdinProcess = new Process();
             StdOut();
             StdIn();
-            RePipe = new StreamPipe(stdoutProcess.StandardOutput.BaseStream, stdinProcess.StandardInput.BaseStream);
-            RePipe.Connect();
+            rePipe = new StreamPipe(stdoutProcess.StandardOutput.BaseStream, stdinProcess.StandardInput.BaseStream);
+            rePipe.Connect();
             instartDeviceInfoData.deviceVmode = deviceInfoData.deviceVmode; // 记录播放时的横竖屏状态（是否竖屏）
             isCasting = true;
             heartTimer.Enabled = true;
@@ -158,9 +192,13 @@ namespace MirrorCaster
             {
                 try
                 {
-                    stdoutProcess.Exited -= StdIOProcess_Exited;
-                    // stdoutProcess.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
-                    stdoutProcess.Kill();
+                    if (stdoutProcess != null)
+                    {
+                        stdoutProcess.Exited -= StdIOProcess_Exited;
+                        // stdoutProcess.OutputDataReceived -= new DataReceivedEventHandler(StdOutProcessOutDataReceived);
+                        stdoutProcess.Kill();
+                        stdoutProcess = null;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -168,16 +206,20 @@ namespace MirrorCaster
                 }
                 try
                 {
-                    stdinProcess.Exited -= StdIOProcess_Exited;
-                    // stdinProcess.OutputDataReceived -= new DataReceivedEventHandler(StdInProcessOutDataReceived);
-                    stdinProcess.Kill();
+                    if (stdinProcess != null) 
+                    {
+                        stdinProcess.Exited -= StdIOProcess_Exited;
+                        // stdinProcess.OutputDataReceived -= new DataReceivedEventHandler(StdInProcessOutDataReceived);
+                        stdinProcess.Kill();
+                        stdoutProcess = null;
+                    }
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine("无法关闭StdIN，" + ex.Message);
                 }
-                if (RePipe != null) { 
-                    RePipe.Disconnect();
+                if (rePipe != null) { 
+                    rePipe.Disconnect();
                 }
             }
             catch (Exception ex)
@@ -282,15 +324,17 @@ namespace MirrorCaster
                     widArg = default;
                     break;
             }
-            string vsync_args = "--d3d11-sync-interval=" + (isEnableVSync ? "1" : "0");
-            string release_args = "--input-default-bindings=no --osd-level=0";
+            string vsyncArgs = "--d3d11-sync-interval=" + (isEnableVSync ? "1" : "0");
+            string releaseArgs = "--input-default-bindings=no --osd-level=0";
+            string fpsControlArgs = profileArgs.useDeviceFPS ? $"--no-correct-pts --fps={deviceInfoData.deviceRefreshRate}" : "--untimed";
+            string hwdecArgs = isEnableHWDec ? "--hwdec=yes" : "--hwdec=no";
 #if DEBUG
-            release_args = default;
+            releaseArgs = default;
 #endif
-            string mpv_full_args = $"--title=\"Mirror Caster Source\" --cache=no --no-cache --profile=low-latency --untimed --no-correct-pts --video-latency-hacks=yes --speed=1.2 { vsync_args } --framedrop=decoder --hwdec=auto --no-audio --no-config --no-border -no-osc --no-taskbar-progress { release_args } { widArg } -";
-            Console.WriteLine("MPV ARGS:\r\n" + mpv_full_args);
+            string mpvFullArgs = $"--title=\"Mirror Caster Source\" --cache=no --no-cache --profile=low-latency --framedrop=decoder { vsyncArgs } --scale=spline36 --cscale=spline36 --dscale=mitchell --correct-downscaling=yes --linear-downscaling=yes --sigmoid-upscaling=yes { fpsControlArgs } --video-latency-hacks=yes { profileArgs.argsStr } --vo=gpu { hwdecArgs } --no-audio --no-config --no-border -no-osc --no-taskbar-progress { releaseArgs } { widArg } -";
+            Console.WriteLine("MPV ARGS:\r\n" + mpvFullArgs);
             stdinProcess.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
-            stdinProcess.StartInfo.Arguments = mpv_full_args;
+            stdinProcess.StartInfo.Arguments = mpvFullArgs;
             //stdinProcess.StartInfo.WindowStyle = ProcessWindowStyle.Minimized;
             stdinProcess.StartInfo.UseShellExecute = false;
             stdinProcess.StartInfo.RedirectStandardOutput = true;
@@ -453,7 +497,29 @@ namespace MirrorCaster
 
         private void vsyncEnableCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            isEnableVSync = vsyncEnableCheckBox.Checked;
+            isEnableVSync = (sender as CheckBox).Checked;
+        }
+
+        private void hwdecEnableCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            isEnableHWDec = (sender as CheckBox).Checked;
+        }
+
+        private void profileComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            profileArgs = profileList[(sender as ComboBox).Text] as UserMPVArg;
+        }
+    }
+
+    public class UserMPVArg
+    {
+        public string argsStr;
+        public bool useDeviceFPS;
+
+        public UserMPVArg(string argsStr, bool useDeviceFPS)
+        {
+            this.argsStr = argsStr;
+            this.useDeviceFPS = useDeviceFPS;
         }
     }
 }
