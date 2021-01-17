@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -112,6 +113,8 @@ namespace MirrorCaster
         public MainForm()
         {
             InitializeComponent();
+
+            ResizeInner(deviceInfoData.deviceWidth, deviceInfoData.deviceHeight);
 
             profileComboBox.Items.Clear();
             foreach (string item in profileList.Keys)
@@ -508,6 +511,74 @@ namespace MirrorCaster
         private void profileComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             profileArgs = profileList[(sender as ComboBox).Text] as UserMPVArg;
+        }
+
+        private void screenBox_MouseDown(object sender, MouseEventArgs e)
+        {
+            Point innerPoint = GetInnerPiont(e.Location);
+            Console.WriteLine("Mouse Down: " + innerPoint.X + ", " + innerPoint.Y);
+        }
+
+        private void screenBox_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                Point innerPoint = GetInnerPiont(e.Location);
+                Console.WriteLine("Mouse Move: " + innerPoint.X + ", " + innerPoint.Y);
+            }
+        }
+
+        private void screenBox_MouseUp(object sender, MouseEventArgs e)
+        {
+            Point innerPoint = GetInnerPiont(e.Location);
+            Console.WriteLine("Mouse Up: " + innerPoint.X + ", " + innerPoint.Y);
+        }
+
+        private void screenBox_SizeChanged(object sender, EventArgs e)
+        {
+            ResizeInner(deviceInfoData.deviceWidth, deviceInfoData.deviceHeight);
+        }
+
+        /// <summary>
+        /// 获取对于设备原分辨率的绝对坐标
+        /// </summary>
+        /// <param name="oriLocation"></param>
+        /// <returns></returns>
+        private Point GetInnerPiont(Point oriLocation)
+        {
+            double scaleRate = (double)touchPanel.Width / (double)deviceInfoData.deviceWidth;
+            Point point = new Point();
+            point.X = (int)((oriLocation.X - touchPanel.Location.X) / scaleRate);
+            point.Y = (int)((oriLocation.Y - touchPanel.Location.Y) / scaleRate);
+            return point;
+        }
+
+        private void ResizeInner(double oriWidth, double oriHeight)
+        {
+            Point location;
+            int width;
+            int height;
+
+            if (((double)screenBox.Width / (double)screenBox.Height) < (oriWidth / oriHeight))
+            {
+                // 竖屏
+                width = screenBox.Width;
+                height = (int)Math.Ceiling(screenBox.Width / (oriWidth / oriHeight));
+                int centerWindowY = screenBox.Height / 2;
+                int centerCanvasY = height / 2;
+                location = new Point(0, centerWindowY - centerCanvasY);
+            }
+            else
+            {
+                width = (int)Math.Ceiling(screenBox.Height * (oriWidth / oriHeight));
+                height = screenBox.Height;
+                int centerWindowX = screenBox.Width / 2;
+                int centerCanvasX = width / 2;
+                location = new Point(centerWindowX - centerCanvasX, 0);
+            }
+
+            touchPanel.Location = location;
+            touchPanel.Size = new Size(width, height);
         }
     }
 

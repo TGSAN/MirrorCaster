@@ -33,6 +33,7 @@
             this.stopCastButton = new System.Windows.Forms.Button();
             this.pageSetupDialog1 = new System.Windows.Forms.PageSetupDialog();
             this.screenBox = new System.Windows.Forms.Panel();
+            this.touchPanel = new System.Windows.Forms.Panel();
             this.nosigalLabel = new System.Windows.Forms.Label();
             this.heartTimer = new System.Windows.Forms.Timer(this.components);
             this.powerKeyButton = new System.Windows.Forms.Button();
@@ -81,16 +82,32 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.screenBox.BackColor = System.Drawing.Color.Black;
+            this.screenBox.Controls.Add(this.touchPanel);
             this.screenBox.Controls.Add(this.nosigalLabel);
             this.screenBox.Location = new System.Drawing.Point(0, 58);
             this.screenBox.Name = "screenBox";
             this.screenBox.Size = new System.Drawing.Size(784, 503);
             this.screenBox.TabIndex = 2;
+            this.screenBox.SizeChanged += new System.EventHandler(this.screenBox_SizeChanged);
+            this.screenBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.screenBox_MouseDown);
+            this.screenBox.MouseMove += new System.Windows.Forms.MouseEventHandler(this.screenBox_MouseMove);
+            this.screenBox.MouseUp += new System.Windows.Forms.MouseEventHandler(this.screenBox_MouseUp);
+            // 
+            // touchPanel
+            // 
+            this.touchPanel.BackColor = System.Drawing.Color.Yellow;
+            this.touchPanel.Enabled = false;
+            this.touchPanel.ForeColor = System.Drawing.Color.Black;
+            this.touchPanel.Location = new System.Drawing.Point(0, 0);
+            this.touchPanel.Name = "touchPanel";
+            this.touchPanel.Size = new System.Drawing.Size(100, 100);
+            this.touchPanel.TabIndex = 1;
             // 
             // nosigalLabel
             // 
             this.nosigalLabel.BackColor = System.Drawing.Color.Transparent;
             this.nosigalLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.nosigalLabel.Enabled = false;
             this.nosigalLabel.Font = new System.Drawing.Font("微软雅黑", 24F);
             this.nosigalLabel.ForeColor = System.Drawing.Color.White;
             this.nosigalLabel.Location = new System.Drawing.Point(0, 0);
@@ -316,6 +333,7 @@
         private System.Windows.Forms.CheckBox vsyncEnableCheckBox;
         private System.Windows.Forms.ComboBox profileComboBox;
         private System.Windows.Forms.CheckBox hwdecEnableCheckBox;
+        private System.Windows.Forms.Panel touchPanel;
     }
 }
 
