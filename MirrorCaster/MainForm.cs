@@ -331,7 +331,7 @@ namespace MirrorCaster
 #if DEBUG
             releaseArgs = default;
 #endif
-            string mpvFullArgs = $"--title=\"Mirror Caster Source\" --cache=no --no-cache --profile=low-latency --framedrop=decoder { vsyncArgs } --scale=spline36 --cscale=spline36 --dscale=mitchell --correct-downscaling=yes --linear-downscaling=yes --sigmoid-upscaling=yes { fpsControlArgs } --video-latency-hacks=yes { profileArgs.argsStr } --vo=gpu { hwdecArgs } --no-audio --no-config --no-border -no-osc --no-taskbar-progress { releaseArgs } { widArg } -";
+            string mpvFullArgs = $"--title=\"Mirror Caster Source\" --d3d11-output-csp=srgb --cache=no --no-cache --profile=low-latency --framedrop=decoder { vsyncArgs } --scale=spline36 --cscale=spline36 --dscale=mitchell --correct-downscaling=yes --linear-downscaling=yes --sigmoid-upscaling=yes { fpsControlArgs } --video-latency-hacks=yes { profileArgs.argsStr } --vo=gpu { hwdecArgs } --no-audio --no-config --no-border -no-osc --no-taskbar-progress { releaseArgs } { widArg } -";
             Console.WriteLine("MPV ARGS:\r\n" + mpvFullArgs);
             stdinProcess.StartInfo.FileName = System.AppDomain.CurrentDomain.BaseDirectory + @"lib\mpv\mpv.exe";
             stdinProcess.StartInfo.Arguments = mpvFullArgs;
